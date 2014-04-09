@@ -5,7 +5,7 @@ var game = {
         game.queue = new createjs.LoadQueue(false);
         game.queue.installPlugin(createjs.Sound);
         game.queue.addEventListener("complete", game.loadComplete);
-        game.queue.addEventListener("progress", game.handleProgress);
+        game.queue.addEventListener("progress", game.handlePreloadProgress);
 
         game.queue.loadManifest([
             {id: "butterfly", src: "img/logo.png"},
@@ -15,7 +15,7 @@ var game = {
     },
     loadComplete: function () {
         game.setupStage();
-        game.buildButterflies();
+        game.doTask();
     },
     setupStage: function () {
         game.stage = new createjs.Stage(document.getElementById('GameCanvas'));
@@ -24,7 +24,7 @@ var game = {
             game.stage.update();
         });
     },
-    buildButterflies: function () {
+    doTask: function () {
         var img = game.queue.getResult("butterfly");
         var i, sound, butterfly;
         for (i = 0; i < 3; i++) {
@@ -36,7 +36,7 @@ var game = {
             sound = createjs.Sound.play('woosh', createjs.Sound.INTERRUPT_NONE, i * 1000);
         }
     },
-    handleProgress: function(event){
+    handlePreloadProgress: function(event){
         var progressBar  = document.getElementById("bootProgress");
         var progress = (Math.ceil(event.progress*100)).toString();
 

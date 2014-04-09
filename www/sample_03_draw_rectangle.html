@@ -66,19 +66,11 @@
             createjs.Ticker.setPaused(true);
         },
         doTask: function () {
-            var img = game.queue.getResult("butterfly");
+            var g = new createjs.Graphics().beginStroke('#000').beginFill('#00FF00').drawRect(0,0,100,100); //never miss the new keyword
 
-            var s = new createjs.Bitmap(img);
-            s.x = 150;s.y=100;
-            s.regX = 85; s.regY = 100;
-            game.stage.addChild(s);
-
-            var s1 = new createjs.Bitmap(img);
-            s1.x = 350;s1.y=300;
-            game.stage.addChild(s1);
-
-            createjs.Tween.get(s).to({rotation:360},3000);
-            createjs.Tween.get(s1).to({rotation:360},3000);
+            var square = new createjs.Shape(g);
+            square.x = square.y = 100;
+            game.stage.addChild(square);
 
         },
         handlePreloadProgress: function (event) {

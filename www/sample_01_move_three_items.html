@@ -16,13 +16,11 @@
 
 <canvas id="GameCanvas" width="700" height="500" style="border: black solid 1px">
 </canvas>
-<div style="width: 700px;">
+<div style="width: 700px;" >
     <div class="progress progress-striped active">
-        <div id="bootProgress" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
-             aria-valuemax="100" style="width: 0%">
+        <div id="bootProgress" class="progress-bar"  role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
         </div>
     </div>
-    <button type="button" class="btn btn-primary" onclick="game.pauseGame()">Pause</button>
 </div>
 <script type="text/javascript" src="phonegap.js"></script>
 <script src="js/easeljs-0.7.1.min.js"></script>
@@ -30,12 +28,9 @@
 <script src="js/soundjs-0.5.2.min.js"></script>
 <script src="js/preloadjs-0.4.1.min.js"></script>
 <script type="text/javascript">
-    // Game Prototype
-    //
-    //
     var game = {
-        stage: null, // save stage in this scope
-        queue: null, // save queue in this scope
+        stage: null,
+        queue: null,
         init: function () {
             game.queue = new createjs.LoadQueue(false);
             game.queue.installPlugin(createjs.Sound);
@@ -53,47 +48,33 @@
             game.doTask();
         },
         setupStage: function () {
-            game.stage = new createjs.Stage('GameCanvas');
-            createjs.Ticker.setFPS(60); //frames per second of the game
-            createjs.Ticker.addEventListener("tick", game.tick);
-        },
-        tick: function (e) {
-            if (!e.paused) {
+            game.stage = new createjs.Stage(document.getElementById('GameCanvas'));
+            createjs.Ticker.setFPS(60);
+            createjs.Ticker.addEventListener("tick", function () {
                 game.stage.update();
-            }
-        },
-        pauseGame: function () {
-            createjs.Ticker.setPaused(true);
+            });
         },
         doTask: function () {
             var img = game.queue.getResult("butterfly");
-
-            var s = new createjs.Bitmap(img);
-            s.x = 150;s.y=100;
-            s.regX = 85; s.regY = 100;
-            game.stage.addChild(s);
-
-            var s1 = new createjs.Bitmap(img);
-            s1.x = 350;s1.y=300;
-            game.stage.addChild(s1);
-
-            createjs.Tween.get(s).to({rotation:360},3000);
-            createjs.Tween.get(s1).to({rotation:360},3000);
-
+            var i, sound, butterfly;
+            for (i = 0; i < 3; i++) {
+                butterfly = new createjs.Bitmap(img);
+                butterfly.x = i * 200;
+                game.stage.addChild(butterfly);
+                createjs.Tween.get(butterfly).wait(i * 1000).to({y: 100}, 1000,
+                        createjs.Ease.quadOut);
+                sound = createjs.Sound.play('woosh', createjs.Sound.INTERRUPT_NONE, i * 1000);
+            }
         },
-        handlePreloadProgress: function (event) {
-            var progressBar = document.getElementById("bootProgress");
-            var progress = (Math.ceil(event.progress * 100)).toString();
+        handlePreloadProgress: function(event){
+            var progressBar  = document.getElementById("bootProgress");
+            var progress = (Math.ceil(event.progress*100)).toString();
 
-            progressBar.setAttribute('style', 'width: ' + progress + '%');
+            progressBar.setAttribute('style','width: ' + progress + '%');
         }
 
     };
 
-    // PhoneGap related code
-    //
-    // define an application prototype
-    // app --> handles PhoneGap related code
     var app = {
         // Application Constructor
         initialize: function () {

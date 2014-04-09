@@ -67,19 +67,15 @@
         },
         doTask: function () {
             var img = game.queue.getResult("butterfly");
-
-            var s = new createjs.Bitmap(img);
-            s.x = 150;s.y=100;
-            s.regX = 85; s.regY = 100;
-            game.stage.addChild(s);
-
-            var s1 = new createjs.Bitmap(img);
-            s1.x = 350;s1.y=300;
-            game.stage.addChild(s1);
-
-            createjs.Tween.get(s).to({rotation:360},3000);
-            createjs.Tween.get(s1).to({rotation:360},3000);
-
+            var i, sound, butterfly;
+            for (i = 0; i < 3; i++) {
+                butterfly = new createjs.Bitmap(img);
+                butterfly.x = i * 200;
+                game.stage.addChild(butterfly);
+                createjs.Tween.get(butterfly).wait(i * 1000).to({y: 100}, 1000,
+                        createjs.Ease.quadOut);
+                sound = createjs.Sound.play('woosh', createjs.Sound.INTERRUPT_NONE, i * 1000);
+            }
         },
         handlePreloadProgress: function (event) {
             var progressBar = document.getElementById("bootProgress");
