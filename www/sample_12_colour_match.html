@@ -170,7 +170,7 @@
                     createjs.Tween.get(shape).to({x:slot.x,y:slot.y},200, createjs.Ease.quadOut).call(game.checkGame);
                 }
                 else {
-                    createjs.Tween.get(shape).to({x:shape.homeX,y:shape.homeY},200, createjs.Ease.quadOut);
+                    createjs.Tween.get(shape).to({x:shape.homeX,y:shape.homeY},200, createjs.Ease.bounceOut);
                 }
             });
 

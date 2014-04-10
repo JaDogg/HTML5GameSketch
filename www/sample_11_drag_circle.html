@@ -14,7 +14,7 @@
 </head>
 <body style="background-color: #bababa">
 <div style="width:800px; height:800px; margin: auto; border: 1px solid #000000">
-    <canvas id="GameCanvas" width="700" height="500" style="border: 1px solid #000000">
+    <canvas id="GameCanvas" width="700" height="500" style="padding-top: 50px; border: 1px solid #000000">
     </canvas>
     <div style="width: 700px; border: 1px solid #000000">
         <button type="button" class="btn btn-danger" onclick="game.pauseGame()">Pause</button>
@@ -65,10 +65,6 @@
     var game = {
         stage: null, // save stage in this scope
         queue: null, // save queue in this scope
-
-        shapes:[],
-        slots:[],
-        score:0,
         initialize: function () {
             game.setupStage();
             gameLoader.createLoader();
@@ -105,81 +101,24 @@
             createjs.Ticker.setPaused(false);
         },
         doTask: function () {
-            game.buildShapes();
-            game.setBlocks();
-        },
-        buildShapes: function () {
-            var colors = ['blue','red','green','yellow'];
-            var i, shape ,slot;
-            for(i = 0; i<colors.length; i++){
-                // slots
-                slot = new createjs.Shape();
-                slot.graphics.beginStroke(colors[i]);
-                slot.graphics.beginFill('#FFF');
-                slot.graphics.drawRect(0,0,100,100);
-                slot.regX = slot.regY = 50;
-                slot.key = i;
-                slot.y = 80;
-                slot.x = (i * 130) + 100;
-                game.stage.addChild(slot);
-                game.slots.push(slot);
+            var circle = new createjs.Shape();
+            circle.graphics.beginFill('#00ff00').drawCircle(0,0,50);
+            circle.x = game.stage.canvas.width  / 2;
+            circle.y = game.stage.canvas.height / 2;
+            circle.name = 'Green Circle';
+            game.stage.addChild(circle);
 
-                // shapes
-                shape = new createjs.Shape();
-                shape.graphics.beginFill(colors[i]);
-                shape.graphics.drawRect(0,0,100,100);
-                shape.regX = shape.regY = 50;
-                shape.key = i;
-                game.shapes.push(shape);
-            }
-        },
-        setBlocks: function () {
-            var i, r, shape;
-            var l = game.shapes.length; // splice change the length
-            for(i = 0; i<l; i++){
-                r = Math.floor(Math.random() * game.shapes.length);
-                shape = game.shapes[r];
-                shape.homeY = 320;
-                shape.homeX = (i * 130) + 100;
-                shape.y = shape.homeY;
-                shape.x = shape.homeX;
-                shape.addEventListener('mousedown',game.startDrag);
-                game.stage.addChild(shape);
-                game.shapes.splice(r , 1);
-
-            }
-        },
-        startDrag: function (e) {
-            var shape = e.target;
-            var slot = game.slots[shape.key];
-
-            game.stage.setChildIndex(shape, game.stage.getNumChildren()-1); // to the top
-
-            game.stage.addEventListener('stagemousemove' ,function (e){
-                shape.x = e.stageX;
-                shape.y = e.stageY;
+            game.stage.enableMouseOver();
+            circle.cursor = 'pointer';
+            circle.addEventListener('mousedown',function(e){
+                game.stage.addEventListener('stagemousemove',function(e){
+                    circle.x = game.stage.mouseX;
+                    circle.y = game.stage.mouseY;
+                });
+                game.stage.addEventListener('stagemouseup',function(e){
+                    e.target.removeAllEventListeners();
+                });
             });
-
-            game.stage.addEventListener('stagemouseup',function (e){
-                game.stage.removeAllEventListeners();
-
-                var pt = slot.globalToLocal(game.stage.mouseX,game.stage.mouseY);
-                if (shape.hitTest(pt.x,pt.y)){
-                    shape.removeEventListener("mousedown",game.startDrag);
-                    game.score++;
-                    createjs.Tween.get(shape).to({x:slot.x,y:slot.y},200, createjs.Ease.quadOut).call(game.checkGame);
-                }
-                else {
-                    createjs.Tween.get(shape).to({x:shape.homeX,y:shape.homeY},200, createjs.Ease.quadOut);
-                }
-            });
-
-
-        },
-        checkGame: function () {
-            if(game.score == 4){
-                alert('you won');
-            }
         },
         handlePreloadProgress: function (event) {
             gameLoader.updateLoaderBar(event.progress);
