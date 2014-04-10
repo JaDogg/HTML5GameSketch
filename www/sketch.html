@@ -14,18 +14,18 @@
 </head>
 <body style="background-color: #bababa">
 <div style="width:800px; height:800px; margin: auto;">
-<canvas id="GameCanvas" width="700" height="500" style="padding-top: 50px;">
-</canvas>
-<div style="width: 700px;">
-    <div class="progress progress-striped active">
-        <div id="bootProgress" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
-             aria-valuemax="100" style="width: 0%">
+    <canvas id="GameCanvas" width="700" height="500" style="padding-top: 50px;">
+    </canvas>
+    <div style="width: 700px;">
+        <div class="progress progress-striped active">
+            <div id="bootProgress" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                 aria-valuemax="100" style="width: 0%">
+            </div>
         </div>
+        <button type="button" class="btn btn-danger" onclick="game.pauseGame()">Pause</button>
+        <button type="button" class="btn btn-primary" onclick="game.resumeGame()">Resume</button>
     </div>
-    <button type="button" class="btn btn-danger" onclick="game.pauseGame()">Pause</button>
-    <button type="button" class="btn btn-primary" onclick="game.resumeGame()">Resume</button>
 </div>
-    </div>
 <script type="text/javascript" src="phonegap.js"></script>
 <script src="js/easeljs-0.7.1.min.js"></script>
 <script src="js/tweenjs-0.5.1.min.js"></script>
@@ -35,49 +35,42 @@
     // Game Prototype
     //
     //
+    var gameLoader = {
+        LOADER_WIDTH: 400,
+        loadInterval: null,
+        loaderBar: null,
+        percentLoaded: 0,
+        createLoader: function () {
+            gameLoader.loaderBar = new createjs.Shape();
+            gameLoader.loaderBar.x = gameLoader.loaderBar.y = 100;
+            gameLoader.loaderBar.graphics.setStrokeStyle(2);
+            gameLoader.loaderBar.graphics.beginStroke('#000');
+            gameLoader.loaderBar.graphics.drawRect(0, 0, gameLoader.LOADER_WIDTH, 40);
+            game.stage.addChild(gameLoader.loaderBar);
+        },
+        updateLoaderBar: function(){
+            gameLoader.loaderBar.graphics.clear();
+            gameLoader.loaderBar.graphics.beginFill('#0000ff');
+            gameLoader.loaderBar.graphics.drawRect(0,0,gameLoader.LOADER_WIDTH * gameLoader.percentLoaded,40);
+            gameLoader.loaderBar.graphics.endFill();
+
+            gameLoader.loaderBar.graphics.setStrokeStyle(2);
+            gameLoader.loaderBar.graphics.beginStroke('#000');
+            gameLoader.loaderBar.graphics.drawRect(0,0,gameLoader.LOADER_WIDTH,40);
+            gameLoader.loaderBar.graphics.endStroke();
+        },
+        removeLoaderBar: function(){
+            game.stage.removeChild(gameLoader.loaderBar);
+        }
+    };
     var game = {
         stage: null, // save stage in this scope
         queue: null, // save queue in this scope
-        backgroundImg:{
-            sizeW:1204,
-            sizeH:1216,
-            back1:null,
-            back2:null,
-            init: function() {
-                var img = game.queue.getResult("background");
-
-                game.backgroundImg.back1 = new createjs.Bitmap(img);
-                game.backgroundImg.back1.regX = game.backgroundImg.sizeW / 2;
-                game.backgroundImg.back1.regY = game.backgroundImg.sizeH / 2;
-                game.backgroundImg.back1.x = game.stage.canvas.width / 2;
-                game.backgroundImg.back1.y = game.stage.canvas.height / 2;
-
-                game.backgroundImg.back2 = new createjs.Bitmap(img);
-                game.backgroundImg.back2.regX = game.backgroundImg.sizeW / 2;
-                game.backgroundImg.back2.regY = game.backgroundImg.sizeH / 2;
-                game.backgroundImg.back2.x = game.stage.canvas.width / 2 + game.backgroundImg.sizeW;
-                game.backgroundImg.back2.y = game.stage.canvas.height / 2;
-
-                game.stage.addChild(game.backgroundImg.back1);
-                game.stage.addChild(game.backgroundImg.back2);
-            },
-            updateBackground: function(){
-                game.backgroundImg.back1.x--;
-                game.backgroundImg.back2.x--;
-                if(game.backgroundImg.back1.x <= game.stage.canvas.width / 2 - game.backgroundImg.sizeW){
-                    game.backgroundImg.back1.x = game.stage.canvas.width / 2 + game.backgroundImg.sizeW;
-                }
-                if(game.backgroundImg.back2.x <= game.stage.canvas.width / 2 - game.backgroundImg.sizeW){
-                    game.backgroundImg.back2.x = game.stage.canvas.width / 2 + game.backgroundImg.sizeW;
-                }
-            }
-        },
-        init: function () {
+        initialize: function () {
             game.queue = new createjs.LoadQueue(false);
             game.queue.installPlugin(createjs.Sound);
             game.queue.addEventListener("complete", game.loadComplete);
             game.queue.addEventListener("progress", game.handlePreloadProgress);
-
             game.queue.loadManifest([
                 {id: "butterfly", src: "img/logo.png"},
                 {id: "background", src: "img/back.png"}, //2408
@@ -96,7 +89,6 @@
         },
         tick: function (e) {
             if (!e.paused) {
-                game.backgroundImg.updateBackground();
                 game.stage.update();
             }
         },
@@ -107,7 +99,7 @@
             createjs.Ticker.setPaused(false);
         },
         doTask: function () {
-            game.backgroundImg.init();
+
         },
         handlePreloadProgress: function (event) {
             var progressBar = document.getElementById("bootProgress");
@@ -125,7 +117,7 @@
     var app = {
         // Application Constructor
         initialize: function () {
-            game.init();
+            game.initialize();
             //this.bindEvents();
         },
         // Bind Event Listeners
