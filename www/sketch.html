@@ -8,17 +8,17 @@
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/bootstrap-theme.min.css">
     <link rel="stylesheet" type="text/css" href="css/index.css"/>
-    <script src="js/bootstrap.min.js"></script>
+
 
     <title>HTML5Game</title>
 </head>
-<body style="background-color: #bababa">
-<div style="width:800px; height:800px; margin: auto; border: 1px solid #000000">
-    <canvas id="GameCanvas" width="700" height="500" style="border: 1px solid #000000">
+<body>
+<div style="width:800px; margin: auto; border: 1px solid #000000">
+    <canvas id="GameCanvas" width="700" height="500" style="border: 1px solid #000000;">
     </canvas>
-    <div style="width: 700px; border: 1px solid #000000">
-        <button type="button" class="btn btn-danger" onclick="game.pauseGame()">Pause</button>
-        <button type="button" class="btn btn-primary" onclick="game.resumeGame()">Resume</button>
+    <div style="width: 700px; border: 1px solid #000000;">
+        <button type="button" class="btn btn-danger" onclick="pauseGame()">Pause</button>
+        <button type="button" class="btn btn-primary" onclick="resumeGame()">Resume</button>
     </div>
 </div>
 <script type="text/javascript" src="phonegap.js"></script>
@@ -27,197 +27,163 @@
 <script src="js/soundjs-0.5.2.min.js"></script>
 <script src="js/preloadjs-0.4.1.min.js"></script>
 <script type="text/javascript">
-    // Game Prototype
-    //
-    //
-    var gameLoader = {
-        LOADER_WIDTH: 400,
-        LOADER_HEIGHT: 20,
-        loadInterval: null,
-        loaderBar: null,
-        createLoader: function () {
-            gameLoader.loaderBar = new createjs.Shape();
-            gameLoader.loaderBar.regX = gameLoader.LOADER_WIDTH  / 2 ;
-            gameLoader.loaderBar.regY = gameLoader.LOADER_HEIGHT / 2 ;
-            gameLoader.loaderBar.x = game.stage.canvas.width  / 2;
-            gameLoader.loaderBar.y = game.stage.canvas.height / 2;
+    //---createjs related
+    var stage;
 
-            gameLoader.loaderBar.graphics.setStrokeStyle(2);
-            gameLoader.loaderBar.graphics.beginStroke('#000');
-            gameLoader.loaderBar.graphics.drawRect(0, 0, gameLoader.LOADER_WIDTH, gameLoader.LOADER_HEIGHT);
-            game.stage.addChild(gameLoader.loaderBar);
-        },
-        updateLoaderBar: function(percentLoaded){
-            gameLoader.loaderBar.graphics.clear();
-            gameLoader.loaderBar.graphics.beginFill('#0000ff');
-            gameLoader.loaderBar.graphics.drawRect(0,0,gameLoader.LOADER_WIDTH * percentLoaded,gameLoader.LOADER_HEIGHT);
-            gameLoader.loaderBar.graphics.endFill();
+    //logic related
+    var ALPHA = 'QWERTYUIOP&ASDFGHJKL& ZXCVBNM';
+    var words = ['use', 'say', 'really', 'rest',
+        'business', 'full', 'help', 'child', 'sort',
+        'pass', 'lay', 'small', 'behind', 'girl',
+        'feel', 'fire', 'care', 'alone', 'open', 'goal'];
 
-            gameLoader.loaderBar.graphics.setStrokeStyle(2);
-            gameLoader.loaderBar.graphics.beginStroke('#000');
-            gameLoader.loaderBar.graphics.drawRect(0,0,gameLoader.LOADER_WIDTH,gameLoader.LOADER_HEIGHT);
-            gameLoader.loaderBar.graphics.endStroke();
-        },
-        removeLoaderBar: function(){
-            game.stage.removeChild(gameLoader.loaderBar);
+    var lives;
+    var boxes;
+    var chosen;
+    var lettersRemaining;
+
+    function init() {
+        stage = new createjs.Stage('GameCanvas');
+        createKeyboard();
+        createWordBoxes();
+        setLives();
+        beginGameCycle();
+    }
+
+    function createKeyboard() {
+
+        //keys = [];
+        var x = 30;
+        var y = stage.canvas.height - 160;
+        var i;
+        var len = ALPHA.length;
+        var c;
+        for (i = 0; i < len; i++) {
+            c = ALPHA[i];
+            if (c == '&') {
+                y+=60;
+                x=30;
+            } else if (c == ' ') {
+                x+=60;
+            }
+            else {
+                var text = new createjs.Text(c, '20px Arial', '#fff');
+                text.textBaseline = 'middle';
+                text.textAlign = 'center';
+                text.x = x;
+                text.y = y;
+
+                var box = new createjs.Shape();
+                box.graphics.beginFill('#000');
+                box.graphics.drawRect(0,0,40,40);
+                box.regX = box.regY = 20;
+                box.x = x;
+                box.y = y;
+                box.key = c.toLowerCase();
+                box.text = text;
+                box.addEventListener('click',keyboardKeyPress);
+
+                stage.addChild(box);
+                stage.addChild(text);
+                x+=60;
+            }
         }
-    };
-    var game = {
-        stage: null, // save stage in this scope
-        queue: null, // save queue in this scope
+    }
+    function createWordBoxes() {
+        //--TODO:words.length<=0
+        boxes = [];
+        var x = 30;
+        var y = 60;
+        var idx = Math.floor(Math.random() * words.length);
+        chosen = words[idx];
+        //words.splice(idx , 1); //remove from word list
+        console.log(chosen);
+        var i;
+        var len = chosen.length;
+        lettersRemaining = len; //number of letters to guess
+        var c;
+        for (i = 0; i < len; i++) {
+            c = chosen[i];
+            var text = new createjs.Text(' ', '20px Arial', '#000');
+            text.textBaseline = 'middle';
+            text.textAlign = 'center';
+            text.x = x;
+            text.y = y;
 
-        shapes:[],
-        slots:[],
-        score:0,
-        initialize: function () {
-            game.setupStage();
-            gameLoader.createLoader();
-            game.queue = new createjs.LoadQueue(false);
-            game.queue.installPlugin(createjs.Sound);
-            game.queue.addEventListener("complete", game.loadComplete);
-            game.queue.addEventListener("progress", game.handlePreloadProgress);
-            game.queue.loadManifest([
-                {id: "butterfly", src: "img/logo.png"},
-                {id: "background", src: "img/back.png"},
-                {id: "chime", src: "snd/dot.mp3"},
-                {id: "woosh", src: "snd/doop.mp3"}
-            ]);
+            var box = new createjs.Shape();
+            box.graphics.beginStroke('#000');
+            box.graphics.drawRect(0,0,40,40);
+            box.regX = box.regY = 20;
+            box.x = x;
+            box.y = y;
+            box.key = c;
+            box.text = text;
+            boxes.push(box);
 
-        },
-        loadComplete: function () {
-            gameLoader.removeLoaderBar();
-            game.doTask();
-        },
-        setupStage: function () {
-            game.stage = new createjs.Stage('GameCanvas');
-            createjs.Ticker.setFPS(60); //frames per second of the game
-            createjs.Ticker.addEventListener("tick", game.tick);
-        },
-        tick: function (e) {
-            if (!e.paused) {
-                game.stage.update();
+            stage.addChild(box);
+            stage.addChild(text);
+            x+=60;
+
+        }
+    }
+    function keyboardKeyPress(e){
+        var key = e.target;
+        checkCharacter(key);
+        checkLives();
+        key.removeEventListener('click',keyboardKeyPress); //remove event listener
+        stage.removeChild(key.text);
+        stage.removeChild(key);
+    }
+    function checkCharacter(key){
+        var i;
+        var len = chosen.length;
+        var c;
+        var found = false;
+        for (i = 0; i < len; i++) {
+            c = chosen[i];
+
+            if(c==key.key){
+                found = true;
+                console.log(i);
+                lettersRemaining--;
+                boxes[i].text.text = key.key.toUpperCase();
             }
-        },
-        pauseGame: function () {
-            createjs.Ticker.setPaused(true);
-        },
-        resumeGame: function () {
-            createjs.Ticker.setPaused(false);
-        },
-        doTask: function () {
-            game.buildShapes();
-            game.setBlocks();
-        },
-        buildShapes: function () {
-            var colors = ['blue','red','green','yellow'];
-            var i, shape ,slot;
-            for(i = 0; i<colors.length; i++){
-                // slots
-                slot = new createjs.Shape();
-                slot.graphics.beginStroke(colors[i]);
-                slot.graphics.beginFill('#FFF');
-                slot.graphics.drawRect(0,0,100,100);
-                slot.regX = slot.regY = 50;
-                slot.key = i;
-                slot.y = 80;
-                slot.x = (i * 130) + 100;
-                game.stage.addChild(slot);
-                game.slots.push(slot);
-
-                // shapes
-                shape = new createjs.Shape();
-                shape.graphics.beginFill(colors[i]);
-                shape.graphics.drawRect(0,0,100,100);
-                shape.regX = shape.regY = 50;
-                shape.key = i;
-                game.shapes.push(shape);
-            }
-        },
-        setBlocks: function () {
-            var i, r, shape;
-            var l = game.shapes.length; // splice change the length
-            for(i = 0; i<l; i++){
-                r = Math.floor(Math.random() * game.shapes.length);
-                shape = game.shapes[r];
-                shape.homeY = 320;
-                shape.homeX = (i * 130) + 100;
-                shape.y = shape.homeY;
-                shape.x = shape.homeX;
-                shape.addEventListener('mousedown',game.startDrag);
-                game.stage.addChild(shape);
-                game.shapes.splice(r , 1);
-
-            }
-        },
-        startDrag: function (e) {
-            var shape = e.target;
-            var slot = game.slots[shape.key];
-
-            game.stage.setChildIndex(shape, game.stage.getNumChildren()-1); // to the top
-
-            game.stage.addEventListener('stagemousemove' ,function (e){
-                shape.x = e.stageX;
-                shape.y = e.stageY;
-            });
-
-            game.stage.addEventListener('stagemouseup',function (e){
-                game.stage.removeAllEventListeners();
-
-                var pt = slot.globalToLocal(game.stage.mouseX,game.stage.mouseY);
-                if (shape.hitTest(pt.x,pt.y)){
-                    shape.removeEventListener("mousedown",game.startDrag);
-                    game.score++;
-                    createjs.Tween.get(shape).to({x:slot.x,y:slot.y},200, createjs.Ease.quadOut).call(game.checkGame);
-                }
-                else {
-                    createjs.Tween.get(shape).to({x:shape.homeX,y:shape.homeY},200, createjs.Ease.quadOut);
-                }
-            });
-
-
-        },
-        checkGame: function () {
-            if(game.score == 4){
-                alert('you won');
-            }
-        },
-        handlePreloadProgress: function (event) {
-            gameLoader.updateLoaderBar(event.progress);
+        }
+        if(!found){
+            lives--;
+        }
+    }
+    function checkLives(){
+        if(lives<=0){
+            alert('loose');
+            stage.removeAllChildren();
+        }else if(lettersRemaining<=0){
+            alert('won');
+            stage.removeAllChildren();
         }
 
-    };
-
-    // PhoneGap related code
-    //
-    // define an application prototype
-    // app --> handles PhoneGap related code
-    var app = {
-        // Application Constructor
-        initialize: function () {
-            game.initialize();
-            //this.bindEvents();
-        },
-        // Bind Event Listeners
-        //
-        // Bind any events that are required on startup. Common events are:
-        // 'load', 'deviceready', 'offline', and 'online'.
-        bindEvents: function () {
-            document.addEventListener('deviceready', this.onDeviceReady, false);
-        },
-        // deviceready Event Handler
-        //
-        // The scope of 'this' is the event. In order to call the 'receivedEvent'
-        // function, we must explicity call 'app.receivedEvent(...);'
-        onDeviceReady: function () {
-            app.receivedEvent('deviceready');
-        },
-        // Update DOM on a Received Event
-        receivedEvent: function (id) {
-            console.log('Received Event: ' + id);
+    }
+    function tick(e) {
+        if (!e.paused) {
+            stage.update();
         }
-    };
+    }
+    function pauseGame() {
+        createjs.Ticker.setPaused(true);
+    }
+    function resumeGame() {
+        createjs.Ticker.setPaused(false);
+    }
+    function setLives() {
+        lives = 5;
+    }
+    function beginGameCycle(){
+        createjs.Ticker.setFPS(60); //frames per second of the game
+        createjs.Ticker.addEventListener("tick", tick);
+    }
 
-    app.initialize();
+
+    init();
 </script>
 </body>
 </html>

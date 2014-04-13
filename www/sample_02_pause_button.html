@@ -40,7 +40,7 @@
             game.queue = new createjs.LoadQueue(false);
             game.queue.installPlugin(createjs.Sound);
             game.queue.addEventListener("complete", game.loadComplete);
-            game.queue.addEventListener("progress", game.handlePreloadProgress);
+            game.queue.addEventListener("progress", game.handlePreLoadProgress);
 
             game.queue.loadManifest([
                 {id: "butterfly", src: "img/logo.png"},
@@ -77,7 +77,7 @@
                 sound = createjs.Sound.play('woosh', createjs.Sound.INTERRUPT_NONE, i * 1000);
             }
         },
-        handlePreloadProgress: function (event) {
+        handlePreLoadProgress: function (event) {
             var progressBar = document.getElementById("bootProgress");
             var progress = (Math.ceil(event.progress * 100)).toString();
 

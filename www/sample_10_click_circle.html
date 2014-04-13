@@ -71,7 +71,7 @@
             game.queue = new createjs.LoadQueue(false);
             game.queue.installPlugin(createjs.Sound);
             game.queue.addEventListener("complete", game.loadComplete);
-            game.queue.addEventListener("progress", game.handlePreloadProgress);
+            game.queue.addEventListener("progress", game.handlePreLoadProgress);
             game.queue.loadManifest([
                 {id: "butterfly", src: "img/logo.png"},
                 {id: "background", src: "img/back.png"},
@@ -120,7 +120,7 @@
                 circle.alpha = .5;
             });
         },
-        handlePreloadProgress: function (event) {
+        handlePreLoadProgress: function (event) {
             gameLoader.updateLoaderBar(event.progress);
         }
 

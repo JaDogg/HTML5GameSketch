@@ -40,7 +40,7 @@
             game.queue = new createjs.LoadQueue(false);
             game.queue.installPlugin(createjs.Sound);
             game.queue.addEventListener("complete", game.loadComplete);
-            game.queue.addEventListener("progress", game.handlePreloadProgress);
+            game.queue.addEventListener("progress", game.handlePreLoadProgress);
 
             game.queue.loadManifest([
                 {id: "butterfly", src: "img/logo.png"},
@@ -72,7 +72,7 @@
             game.stage.addChild(screen);
 
         },
-        handlePreloadProgress: function (event) {
+        handlePreLoadProgress: function (event) {
             var progressBar = document.getElementById("bootProgress");
             var progress = (Math.ceil(event.progress * 100)).toString();
 
