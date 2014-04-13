@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="format-detection" content="telephone=no"/>
+    <meta name="viewport"
+          content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height"/>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+    <link rel="stylesheet" type="text/css" href="css/index.css"/>
+    <script src="js/bootstrap.min.js"></script>
+
+    <title>HTML5Game</title>
+</head>
+<body style="background-color: #bababa">
+<div style="width:800px; margin: auto; border: 1px solid #000000">
+    <canvas id="GameCanvas" width="700" height="500" style="border: 1px solid #000000;">
+    </canvas>
+    <div style="width: 700px; border: 1px solid #000000;">
+        <button type="button" class="btn btn-danger" onclick="game.pauseGame()">Pause</button>
+        <button type="button" class="btn btn-primary" onclick="game.resumeGame()">Resume</button>
+    </div>
+</div>
+<script type="text/javascript" src="phonegap.js"></script>
+<script src="js/easeljs-0.7.1.min.js"></script>
+<script src="js/tweenjs-0.5.1.min.js"></script>
+<script src="js/soundjs-0.5.2.min.js"></script>
+<script src="js/preloadjs-0.4.1.min.js"></script>
+<script type="text/javascript">
+    // Game Prototype
+    //
+    //
+    const ARROW_KEY_LEFT = 37;
+    const ARROW_KEY_UP = 38;
+    const ARROW_KEY_RIGHT = 39;
+    const ARROW_KEY_DOWN = 40;
+
+    var gameLoader = {
+        LOADER_WIDTH: 400,
+        LOADER_HEIGHT: 20,
+        loadInterval: null,
+        loaderBar: null,
+        createLoader: function () {
+            gameLoader.loaderBar = new createjs.Shape();
+            gameLoader.loaderBar.regX = gameLoader.LOADER_WIDTH / 2;
+            gameLoader.loaderBar.regY = gameLoader.LOADER_HEIGHT / 2;
+            gameLoader.loaderBar.x = game.stage.canvas.width / 2;
+            gameLoader.loaderBar.y = game.stage.canvas.height / 2;
+
+            gameLoader.loaderBar.graphics.setStrokeStyle(2);
+            gameLoader.loaderBar.graphics.beginStroke('#000');
+            gameLoader.loaderBar.graphics.drawRect(0, 0, gameLoader.LOADER_WIDTH, gameLoader.LOADER_HEIGHT);
+            game.stage.addChild(gameLoader.loaderBar);
+        },
+        updateLoaderBar: function (percentLoaded) {
+            gameLoader.loaderBar.graphics.clear();
+            gameLoader.loaderBar.graphics.beginFill('#0000ff');
+            gameLoader.loaderBar.graphics.drawRect(0, 0, gameLoader.LOADER_WIDTH * percentLoaded, gameLoader.LOADER_HEIGHT);
+            gameLoader.loaderBar.graphics.endFill();
+
+            gameLoader.loaderBar.graphics.setStrokeStyle(2);
+            gameLoader.loaderBar.graphics.beginStroke('#000');
+            gameLoader.loaderBar.graphics.drawRect(0, 0, gameLoader.LOADER_WIDTH, gameLoader.LOADER_HEIGHT);
+            gameLoader.loaderBar.graphics.endStroke();
+        },
+        removeLoaderBar: function () {
+            game.stage.removeChild(gameLoader.loaderBar);
+        }
+    };
+    var game = {
+        stage: null, // save stage in this scope
+        queue: null, // save queue in this scope
+        paddle: null,
+        leftKeyDown: false,
+        rightKeyDown: false,
+        initialize: function () {
+            game.setupStage();
+            gameLoader.createLoader();
+            game.queue = new createjs.LoadQueue(false);
+            game.queue.installPlugin(createjs.Sound);
+            game.queue.addEventListener("complete", game.loadComplete);
+            game.queue.addEventListener("progress", game.handlePreLoadProgress);
+            game.queue.loadManifest([
+                {id: "butterfly", src: "img/logo.png"},
+                {id: "background", src: "img/back.png"},
+                {id: "chime", src: "snd/dot.mp3"},
+                {id: "woosh", src: "snd/doop.mp3"}
+            ]);
+
+        },
+        loadComplete: function () {
+            gameLoader.removeLoaderBar();
+            game.doTask();
+        },
+        setupStage: function () {
+            game.stage = new createjs.Stage('GameCanvas');
+            createjs.Ticker.setFPS(60); //frames per second of the game
+            createjs.Ticker.addEventListener("tick", game.tick);
+        },
+        tick: function (e) {
+            if (!e.paused) {
+                game.update();
+                game.render();
+                game.stage.update();
+            }
+        },
+        pauseGame: function () {
+            createjs.Ticker.setPaused(true);
+        },
+        resumeGame: function () {
+            createjs.Ticker.setPaused(false);
+        },
+        doTask: function () {
+            var text = new createjs.Text("Hello !", "20px Arial", "#ff0000");
+            text.text += " World !";
+            text.textBaseline = "middle";
+            text.textAlign = "center";
+            text.x = game.stage.canvas.width / 2;
+            text.y = game.stage.canvas.height / 2;
+            game.stage.addChild(text);
+
+            game.paddle = new createjs.Shape();
+            game.paddle.width = 100;
+            game.paddle.graphics.beginFill('#0000FF').drawRect(0, 0, game.paddle.width, 20);
+            game.paddle.x = game.paddle.nextX = 0;
+            game.paddle.y = game.stage.canvas.height - 20;
+            game.stage.addChild(game.paddle);
+            //handle keys
+            window.onkeydown = game.movePaddle;
+            window.onkeyup = game.stopPaddle;
+        },
+        movePaddle: function (e) {
+            e = ((!e) ? window.event : e);
+            switch (e.keyCode) {
+                case ARROW_KEY_LEFT:
+                    game.leftKeyDown = true;
+                    break;
+                case ARROW_KEY_RIGHT:
+                    game.rightKeyDown = true;
+                    break;
+            }
+        },
+        stopPaddle: function (e) {
+            e = ((!e) ? window.event : e);
+            switch (e.keyCode) {
+                case ARROW_KEY_LEFT:
+                    game.leftKeyDown = false;
+                    break;
+                case ARROW_KEY_RIGHT:
+                    game.rightKeyDown = false;
+                    break;
+            }
+        },
+        update: function () {
+            var nextX = game.paddle.x;
+            if (game.leftKeyDown) {
+                nextX = game.paddle.x - 10;
+                if (nextX < 0) {
+                    nextX = 0;
+                }
+            } else if (game.rightKeyDown) {
+                nextX = game.paddle.x + 10;
+                if (nextX > game.stage.canvas.width - game.paddle.width) {
+                    nextX = game.stage.canvas.width - game.paddle.width;
+                }
+            }
+            game.paddle.nextX = nextX;
+        },
+        render: function () {
+            game.paddle.x = game.paddle.nextX;
+        },
+        handlePreLoadProgress: function (event) {
+            gameLoader.updateLoaderBar(event.progress);
+        }
+
+    };
+    game.initialize();
+</script>
+</body>
+</html>
